@@ -3,6 +3,9 @@
 // For the full copyright and license information, please view the LICENSE
 // file that was distributed with this source code.
 
+// std::os::wasi::ffi is stable on wasip1 but still feature-gated on wasm32-wasip2.
+#![cfg_attr(all(target_os = "wasi", target_env = "p2"), feature(wasip2))]
+
 // cSpell:ignore strs
 
 use clap::{Arg, ArgAction, Command, builder::ValueParser};

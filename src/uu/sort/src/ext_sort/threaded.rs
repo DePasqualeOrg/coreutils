@@ -7,7 +7,6 @@
 //! thread, and spill to temporary files when memory is exceeded.
 
 use std::cmp::Ordering;
-use std::fs::File;
 use std::io::{Read, Write, stderr};
 use std::iter;
 use std::sync::mpsc::{Receiver, SyncSender};
@@ -21,16 +20,14 @@ use crate::chunks::RecycledChunk;
 use crate::merge::WriteableCompressedTmpFile;
 use crate::merge::WriteablePlainTmpFile;
 use crate::merge::WriteableTmpFile;
-use crate::tmp_dir::{TmpDirWrapper, TmpPath};
+use crate::tmp_dir::TmpDirWrapper;
 use crate::{
     GlobalSettings, Line,
     chunks::{self, Chunk},
     compare_by, merge, print_sorted, sort_by,
 };
 
-// Note: update `test_sort::test_start_buffer` if this size is changed
-// Fixed to 8 KiB (equivalent to `std::sys::io::DEFAULT_BUF_SIZE` on most targets)
-const DEFAULT_BUF_SIZE: usize = 8 * 1024;
+use super::{DEFAULT_BUF_SIZE, write};
 
 /// Sort files by using auxiliary files for storing intermediate chunks (if needed), and output the result.
 ///
@@ -282,61 +279,5 @@ fn read_write_loop<I: WriteableTmpFile>(
                 sender_option = None;
             }
         }
-    }
-}
-
-/// Write the lines in `chunk` to `file`, separated by `separator`.
-/// `compress_prog` is used to optionally compress file contents.
-fn write<I: WriteableTmpFile>(
-    chunk: &Chunk,
-    file: (File, TmpPath),
-    compress_prog: Option<&str>,
-    separator: u8,
-) -> UResult<I::Closed> {
-    let mut tmp_file = I::create(file, compress_prog)?;
-    write_lines(chunk.lines(), tmp_file.as_write(), separator)?;
-    tmp_file.finished_writing()
-}
-
-fn write_lines<T: Write>(lines: &[Line], writer: &mut T, separator: u8) -> std::io::Result<()> {
-    for s in lines {
-        writer.write_all(s.line)?;
-        writer.write_all(&[separator])?;
-    }
-    Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use std::io;
-
-    use super::*;
-
-    struct FailingWriter(io::ErrorKind);
-
-    impl Write for FailingWriter {
-        fn write(&mut self, _buf: &[u8]) -> io::Result<usize> {
-            Err(io::Error::from(self.0))
-        }
-
-        fn flush(&mut self) -> io::Result<()> {
-            Ok(())
-        }
-    }
-
-    #[test]
-    fn write_lines_propagates_write_errors() {
-        let lines = [Line {
-            line: b"line",
-            index: 0,
-        }];
-
-        let result = write_lines(
-            &lines,
-            &mut FailingWriter(io::ErrorKind::StorageFull),
-            b'\n',
-        );
-
-        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::StorageFull);
     }
 }

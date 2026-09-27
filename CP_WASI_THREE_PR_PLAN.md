@@ -2,6 +2,8 @@
 
 # WASI `cp` PR plan
 
+Superseded on September 27, 2026 by `CP_UPDATE_TIMESTAMPS_PR_PLAN.md`, which replaces #13913 with one PR per defect. This file is kept as the record of the earlier approach.
+
 ## Context
 
 PR [#13804](https://github.com/uutils/coreutils/pull/13804) reduced the original WASI `cp` work to symlink creation and has merged. Attempts to divide the remaining timestamp work produced artificial abstractions that obscured the metadata flow, so draft PR [#13913](https://github.com/uutils/coreutils/pull/13913) remains a coherent combined reference implementation for a future contributor to split or adapt.

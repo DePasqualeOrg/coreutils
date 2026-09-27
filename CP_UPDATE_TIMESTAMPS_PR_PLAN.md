@@ -60,6 +60,9 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - `-u --attributes-only` with a newer source copies the file's data, because `CopyMode::Update` takes precedence over `AttrOnly`. GNU 9.7 changes only the attributes.
 - `cp -a a/. b/. dest/` where `a/f` and `b/f` are hard links removes the just-copied `dest/f` and then fails to link it to itself with "No such file or directory". GNU 9.7 exits 0 with `dest/f` in place. Checking whether `copied_files` maps the source to `dest` itself before the removal avoids the data loss.
 - `cp -i --remove-destination f l`, where `l` is a symlink to `f`, removes `l` before prompting, so answering "n" still loses it. GNU 9.7 prompts first and keeps the link, with or without `-u`.
+- With `--update=none` or `none-fail`, the early `--remove-destination` branches for a destination that is a symlink or hard link to the source remove it before the update mode is considered.
+- `-f --preserve=links` and `--attributes-only --preserve=links` without `--remove-destination` do not remove an existing destination before linking a later hard link to it, so the link fails with "File exists". This includes a later name whose source was skipped by `-u`, as upstream does. GNU 9.7 replaces the destination in both modes.
+- With `-u --preserve=links`, when the kept destination is a symlink and the sources are regular files, GNU 9.7 links later names to the symlink's target, and fails when it dangles. uutils copies them as regular files, because a hard link to the symlink would be another symlink.
 - A recursive `-a -n` does not record a skipped file in `copied_files`, so a later hard link to it is copied as an independent file. Not checked against GNU.
 
 ## Dropped from #13913

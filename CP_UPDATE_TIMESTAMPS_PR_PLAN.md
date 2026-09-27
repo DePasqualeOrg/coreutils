@@ -32,11 +32,9 @@ Maintainers prefer small PRs, so each PR fixes one defect and carries its own te
 - `--update=older --remove-destination` deletes a newer destination and copies the older source over it.
 - `-u -p` and `--attributes-only -u -p` give a skipped destination the source's mode and times.
 - `--update=older -i --remove-destination` deletes the destination without prompting.
-- `--no-clobber --update=older --preserve=links` hard-links a later link of the source to the protected destination.
 - `-l -u` and `-s -u` fail with "File exists" instead of skipping a newer destination.
-- `--update=older --remove-destination` removes a destination that is a hard link or symlink to the source, where GNU leaves it alone.
 
-The fix makes the whole skip decision (modification times, then the overwrite policy) in `handle_existing_dest` before any backup or removal, and returns early from `copy_file` on a skip. A source that is a hard link to an already handled file is still linked, and a file skipped only because it is not newer is still remembered for later links, as GNU does. A file protected by `--no-clobber` is not remembered. A source whose recorded destination is the current destination (two hard-linked operands copied to the same name) goes through the age check instead of being linked. With `--no-clobber`, a later hard link is not linked over an existing destination either. A missing source still reports "cannot stat".
+The fix decides the `-u` skip in `handle_existing_dest`, and in the `--attributes-only` path that bypasses it, before any backup, removal or prompt, and returns from `copy_file` without touching a skipped destination. As upstream did, a skipped destination is recorded in `copied_files` so later hard links are linked to it, and a source that is a hard link to a source already copied elsewhere is linked to that copy whatever its age. A skipped destination no longer counts as just created, and a newer dangling destination symlink is kept under `-P -u`, as in GNU. The first version also handled the early `--remove-destination` branches and the hard-link cases they raise; that more than doubled the PR for rare cases, so A was reduced to this core and the description names what it leaves out.
 
 ### B: `cp -p` loses the source's access time
 
@@ -60,9 +58,10 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - `-u --attributes-only` with a newer source copies the file's data, because `CopyMode::Update` takes precedence over `AttrOnly`. GNU 9.7 changes only the attributes.
 - `cp -a a/. b/. dest/` where `a/f` and `b/f` are hard links removes the just-copied `dest/f` and then fails to link it to itself with "No such file or directory". GNU 9.7 exits 0 with `dest/f` in place. Checking whether `copied_files` maps the source to `dest` itself before the removal avoids the data loss.
 - `cp -i --remove-destination f l`, where `l` is a symlink to `f`, removes `l` before prompting, so answering "n" still loses it. GNU 9.7 prompts first and keeps the link, with or without `-u`.
-- With `--update=none` or `none-fail`, the early `--remove-destination` branches for a destination that is a symlink or hard link to the source remove it before the update mode is considered.
+- The early `--remove-destination` branches for a destination that is a symlink or hard link to the source remove it before `-u`, `--update=none` or `none-fail` is considered. GNU 9.7 keeps a newer one under `-u`. Handling `-u` there also needs the hard-link bookkeeping that the first version of A had: a kept destination that is a hard link to the source must be recorded, a later source already copied elsewhere must be linked whatever its age, and a kept symlink must not be recorded when the sources are regular files.
 - `-f --preserve=links` and `--attributes-only --preserve=links` without `--remove-destination` do not remove an existing destination before linking a later hard link to it, so the link fails with "File exists". This includes a later name whose source was skipped by `-u`, as upstream does. GNU 9.7 replaces the destination in both modes.
-- With `-u --preserve=links`, when the kept destination is a symlink and the sources are regular files, GNU 9.7 links later names to the symlink's target, and fails when it dangles. uutils copies them as regular files, because a hard link to the symlink would be another symlink.
+- With `-u --preserve=links`, when the kept destination is a symlink and the sources are regular files, GNU 9.7 links later names to the symlink's target, and fails when it dangles. uutils links them to the symlink itself, so they become symlinks, as upstream does.
+- `-n -u --preserve=links` links a later hard link of the source to a destination kept by `-u`, as upstream does. Not checked against GNU.
 - A recursive `-a -n` does not record a skipped file in `copied_files`, so a later hard link to it is copied as an independent file. Not checked against GNU.
 
 ## Dropped from #13913
@@ -83,3 +82,4 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 
 - 2026-09-27: #13913's tests were run against current upstream and compared with GNU. The draft was split by defect instead of by mechanism, which avoids the artificial abstractions that stopped the August split. A0 was added after finding that recursive copies stop at the first skipped file.
 - 2026-09-27: A0, A and B went through three, five and three review rounds and were opened as drafts. B covers regular files only; symlink access times need capture before cp's first path lookup and moved to the C stage.
+- 2026-09-27: A Codex review found that A no longer linked later hard links when `-u --remove-destination` kept a destination that was a hard link to the source. Fixing it took several rounds of hard-link bookkeeping in the early `--remove-destination` branches and grew A to +563/−35. A was rewritten to the core fix (+264/−27), leaving those branches as upstream, reviewed again in three rounds and force-pushed to #14893.

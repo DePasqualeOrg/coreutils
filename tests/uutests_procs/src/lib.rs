@@ -71,6 +71,7 @@ fn wasi_reason(key: &str) -> Option<&'static str> {
         "LinkInSymlinkedDirectoryDenied" => {
             "WASI sandbox: creating a link inside a symlinked directory is denied"
         }
+        "NoAccessCheck" => "WASI: no access(2), so checking an input such as a FIFO has to open it",
         "NoBlockSizeSupport" => "WASI: no block size support",
         "NoFifo" => "WASI: no FIFO/mkfifo support",
         "NoLocaleData" => {
@@ -83,9 +84,6 @@ fn wasi_reason(key: &str) -> Option<&'static str> {
         "NoRlimitSetrlimitSupport" => "WASI: rlimit/setrlimit not supported",
         "NoStdoutFileRedirection" => "WASI: no stdout-to-file redirection",
         "NoSubprocessSpawning" => "WASI: no subprocess spawning",
-        "NoThreadSpawning" => {
-            "WASI: sort -m spawns real OS threads for multi-file merge, unsupported under wasmtime's default config"
-        }
         "NoTzdb" => {
             "WASI: no tzdb; TZ env var is not honoured, so timezone-dependent behaviour (DST validation, timestamps) differs from the host"
         }

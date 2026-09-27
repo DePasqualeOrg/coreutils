@@ -42,12 +42,21 @@ fn test_helper(file_name: &str, possible_args: &[&str]) {
 
 #[test]
 fn test_buffer_sizes() {
-    #[cfg(target_os = "linux")]
-    let buffer_sizes = ["0", "50K", "50k", "1M", "100M", "0%", "10%"];
-    // TODO Percentage sizes are not yet supported beyond Linux.
-    #[cfg(not(target_os = "linux"))]
     let buffer_sizes = ["0", "50K", "50k", "1M", "100M"];
     for buffer_size in &buffer_sizes {
+        new_ucmd!()
+            .arg("-n")
+            .arg("-S")
+            .arg(buffer_size)
+            .arg("ext_sort.txt")
+            .succeeds()
+            .stdout_is_fixture("ext_sort.expected");
+    }
+
+    // TODO Percentage sizes are not yet supported beyond Linux. A WASI guest
+    // also cannot inspect the Linux host's physical memory.
+    #[cfg(all(target_os = "linux", not(wasi_runner)))]
+    for buffer_size in ["0%", "10%"] {
         new_ucmd!()
             .arg("-n")
             .arg("-S")
@@ -125,7 +134,9 @@ fn test_invalid_buffer_size() {
     // A percentage can fit in a u128 while its product with the total
     // physical memory does not; the parser must report it as too large
     // rather than panicking or silently wrapping.
-    #[cfg(target_os = "linux")]
+    // The test runner is built for Linux, but the binary under test may not
+    // expose Linux host memory information (e.g. wasm32-wasip1).
+    #[cfg(all(target_os = "linux", not(wasi_runner)))]
     new_ucmd!()
         .arg("-S")
         .arg("340282366920938463463374607431768211455%")
@@ -1382,7 +1393,6 @@ fn test_unterminated_file_not_fused_across_chunk_boundary() {
 }
 
 #[test]
-#[uutests::wasi_ignore(NoThreadSpawning)]
 fn test_merge_interleaved() {
     new_ucmd!()
         .arg("-m")
@@ -1394,7 +1404,6 @@ fn test_merge_interleaved() {
 }
 
 #[test]
-#[uutests::wasi_ignore(NoThreadSpawning)]
 fn test_merge_preserves_long_lines() {
     use std::fmt::Write;
 
@@ -1454,7 +1463,6 @@ fn test_ext_sort_preserves_long_lines() {
 // receivers while the reader was still sending, and `chunks::read` unwraps that send.
 #[test]
 #[cfg(target_os = "linux")]
-#[uutests::wasi_ignore(NoThreadSpawning)]
 fn test_merge_write_error_does_not_panic() {
     use std::fs::File;
 
@@ -1555,7 +1563,6 @@ fn test_merge_flush_error_is_reported() {
 }
 
 #[test]
-#[uutests::wasi_ignore(NoThreadSpawning)]
 fn test_merge_unique() {
     new_ucmd!()
         .arg("-m")
@@ -1571,7 +1578,6 @@ fn test_merge_unique() {
 }
 
 #[test]
-#[uutests::wasi_ignore(NoThreadSpawning)]
 fn test_merge_stable() {
     new_ucmd!()
         .arg("-m")
@@ -1584,7 +1590,6 @@ fn test_merge_stable() {
 }
 
 #[test]
-#[uutests::wasi_ignore(NoThreadSpawning)]
 fn test_merge_reversed() {
     new_ucmd!()
         .arg("-m")
@@ -1850,6 +1855,7 @@ fn sort_empty_chunk() {
 
 #[test]
 #[cfg(any(target_os = "linux", target_os = "android"))]
+#[uutests::wasi_ignore(NoSubprocessSpawning)]
 fn test_compress() {
     new_ucmd!()
         .args(&[
@@ -1866,7 +1872,7 @@ fn test_compress() {
 
 #[test]
 #[cfg(any(target_os = "linux", target_os = "android"))]
-#[uutests::wasi_ignore(NoThreadSpawning)]
+#[uutests::wasi_ignore(NoSubprocessSpawning)]
 fn test_compress_merge() {
     new_ucmd!()
         .args(&[
@@ -1961,7 +1967,6 @@ fn test_batch_size_too_large() {
 }
 
 #[test]
-#[uutests::wasi_ignore(NoThreadSpawning)]
 fn test_merge_batch_size() {
     new_ucmd!()
         .arg("--batch-size=2")
@@ -1981,7 +1986,7 @@ fn test_merge_batch_size() {
 // TODO(#7542): Re-enable on Android once we figure out why setting limit is broken.
 // #[cfg(any(target_os = "linux", target_os = "android"))]
 #[cfg(target_os = "linux")]
-#[uutests::wasi_ignore(NoThreadSpawning)]
+#[uutests::wasi_ignore(NoRlimitSetrlimitSupport)]
 fn test_merge_batch_size_with_limit() {
     // Currently need...
     // 3 descriptors for stdin, stdout, stderr
@@ -2006,6 +2011,7 @@ fn test_merge_batch_size_with_limit() {
 #[test]
 // TODO(#7542): Re-enable on Android once we figure out why setting limit is broken.
 #[cfg(target_os = "linux")]
+#[uutests::wasi_ignore(NoRlimitSetrlimitSupport)]
 fn test_batch_size_above_fd_limit_is_rejected() {
     // Only stdin, stdout and stderr are unavailable for merge inputs, so the
     // largest acceptable --batch-size is the soft limit minus 3, here 27 - 3.
@@ -2023,6 +2029,7 @@ fn test_batch_size_above_fd_limit_is_rejected() {
 
 #[test]
 #[cfg(target_os = "linux")]
+#[uutests::wasi_ignore(NoRlimitSetrlimitSupport)]
 fn test_batch_size_at_fd_limit_is_accepted() {
     let limit_fd = 27;
     let (at, mut ucmd) = at_and_ucmd!();
@@ -2136,6 +2143,7 @@ fn test_sigpipe_panic() {
 
 #[test]
 #[cfg(unix)]
+#[uutests::wasi_ignore(NoFifo)]
 fn test_fifo_without_trailing_newline() {
     let (at, mut ucmd) = at_and_ucmd!();
     at.mkfifo("FIFO");
@@ -2231,6 +2239,7 @@ fn test_verifies_input_files() {
 
 #[test]
 #[cfg(unix)]
+#[uutests::wasi_ignore(NoAccessCheck)]
 fn test_verifies_input_files_without_opening_them() {
     // Opening a FIFO blocks until a writer shows up, so if the input check opened
     // the inputs, the missing second file would never be reported.
@@ -2419,6 +2428,50 @@ fn test_merge_output_file_is_truncated() {
 }
 
 #[test]
+fn test_output_is_input_without_merge() {
+    let input = "a\nb\n";
+    let (at, mut ucmd) = at_and_ucmd!();
+
+    at.write("file", input);
+
+    ucmd.args(&["-r", "-o", "file", "file"]).succeeds();
+    assert_eq!(at.read("file"), "b\na\n");
+}
+
+#[test]
+fn test_output_is_input_via_stdin_in_merge_mode() {
+    let (at, mut ucmd) = at_and_ucmd!();
+    at.write("file", "a\n");
+
+    ucmd.args(&["-m", "-o", "file", "-"])
+        .set_stdin(std::fs::File::open(at.plus("file")).unwrap())
+        .succeeds();
+
+    assert_eq!(at.read("file"), "a\n");
+}
+
+#[test]
+fn test_merge_with_output_reads_repeated_stdin_once() {
+    let (at, mut ucmd) = at_and_ucmd!();
+
+    ucmd.args(&["-m", "-o", "file", "-", "-"])
+        .pipe_in("a\n")
+        .succeeds();
+
+    assert_eq!(at.read("file"), "a\n");
+}
+
+#[test]
+fn test_output_named_stdin_marker_reads_stdin() {
+    let (at, mut ucmd) = at_and_ucmd!();
+    at.write("-", "old contents\n");
+
+    ucmd.args(&["-o", "-", "-"]).pipe_in("b\na\n").succeeds();
+
+    assert_eq!(at.read("-"), "a\nb\n");
+}
+
+#[test]
 #[cfg(unix)]
 #[uutests::wasi_ignore(HostPathsNotVisible)]
 fn test_output_device() {
@@ -2429,7 +2482,6 @@ fn test_output_device() {
 }
 
 #[test]
-#[uutests::wasi_ignore(NoThreadSpawning)]
 fn test_merge_empty_input() {
     new_ucmd!()
         .args(&["-m", "empty.txt"])
@@ -2504,6 +2556,7 @@ fn test_tmp_files_deleted_on_sigint() {
 
 #[test]
 #[cfg(unix)]
+#[uutests::wasi_ignore(NoPermissionBits)]
 fn test_tmp_files_are_private() {
     use rustix::process::{Pid, Signal, kill_process};
     use std::os::unix::fs::PermissionsExt as _;
@@ -3993,6 +4046,7 @@ fn test_locale_utf8_sort_debug_message() {
 
 #[test]
 #[cfg(unix)]
+#[uutests::wasi_ignore(NoLocaleData)]
 fn test_failed_to_set_locale_debug_message() {
     let result = new_ucmd!()
         .env("LC_ALL", "not-valid-locale")
@@ -4148,6 +4202,7 @@ fn test_sort_locale_punctuation() {
 }
 
 #[test]
+#[uutests::wasi_ignore(NoLocaleData)]
 fn test_locale_empty_env_vars_hungarian_lc_collate() {
     // Regression test for issue #11136
     let input = "gx\ngy\ngz\n";

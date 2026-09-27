@@ -18,7 +18,7 @@ Maintainers prefer small PRs, so each PR fixes one defect and carries its own te
 | C | `cp: preserve directory access times` | B merged | Planned |
 | D | `cp: preserve symlink timestamps on WASI` | B merged | Planned |
 
-Close #13913 once A0, A and B are open, pointing to them.
+#13913 was closed on September 27, 2026, pointing to A0, A and B.
 
 ### A0: recursive copy stops at the first skipped file
 
@@ -73,7 +73,7 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - [x] A0 implemented, reviewed, tested natively and under wasmtime, and opened as a draft.
 - [x] A implemented on A0, reviewed, tested, and opened as a draft.
 - [x] B implemented, reviewed, tested, and opened as a draft.
-- [ ] #13913 closed with links to A0, A and B.
+- [x] #13913 closed with links to A0, A and B.
 - [ ] C and D implemented after B merges.
 
 ## Decision record

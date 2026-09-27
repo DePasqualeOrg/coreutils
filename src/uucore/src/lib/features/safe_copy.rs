@@ -93,7 +93,7 @@ pub fn preserved_mode(src_mode: u32, ownership_preserved: bool) -> u32 {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 mod tests {
     use super::*;
     use std::io::{Read, Write};

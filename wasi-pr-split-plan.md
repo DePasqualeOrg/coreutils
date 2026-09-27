@@ -39,7 +39,8 @@ Porting notes from the September 27 refresh:
 Detailed plans:
 
 - `SORT_WASI_SIX_PR_PLAN.md`
-- `CP_WASI_THREE_PR_PLAN.md`
+- `CP_UPDATE_TIMESTAMPS_PR_PLAN.md` (replaces #13913)
+- `CP_WASI_THREE_PR_PLAN.md` (superseded)
 
 ## Refresh checklist
 

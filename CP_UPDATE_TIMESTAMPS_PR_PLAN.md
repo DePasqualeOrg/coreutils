@@ -12,9 +12,9 @@ Maintainers prefer small PRs, so each PR fixes one defect and carries its own te
 
 | PR | Title | Depends on | Status |
 |---|---|---|---|
-| A0 | [#14891](https://github.com/uutils/coreutils/pull/14891) `cp: keep copying a directory after skipping a file` | – | Draft |
-| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 | Draft |
-| B | [#14892](https://github.com/uutils/coreutils/pull/14892) `cp: preserve the source's access time` | – | Draft |
+| A0 | [#14891](https://github.com/uutils/coreutils/pull/14891) `cp: keep copying a directory after skipping a file` | – | Merged (2026-10-03) |
+| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Draft, rebased on `main` |
+| B | [#14892](https://github.com/uutils/coreutils/pull/14892) `cp: preserve the source's access time` | – | Ready for review |
 | C | `cp: preserve directory access times` | B merged | Planned |
 | D | `cp: preserve symlink timestamps on WASI` | B merged | Planned |
 
@@ -76,6 +76,8 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - [x] A implemented on A0, reviewed, tested, and opened as a draft.
 - [x] B implemented, reviewed, tested, and opened as a draft.
 - [x] #13913 closed with links to A0, A and B.
+- [x] A0 merged; A rebased onto `main` (2026-10-03).
+- [x] B marked ready for review, and the maintainer's review addressed (2026-10-03).
 - [ ] C and D implemented after B merges.
 
 ## Decision record
@@ -83,3 +85,5 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - 2026-09-27: #13913's tests were run against current upstream and compared with GNU. The draft was split by defect instead of by mechanism, which avoids the artificial abstractions that stopped the August split. A0 was added after finding that recursive copies stop at the first skipped file.
 - 2026-09-27: A0, A and B went through three, five and three review rounds and were opened as drafts. B covers regular files only; symlink access times need capture before cp's first path lookup and moved to the C stage.
 - 2026-09-27: A Codex review found that A no longer linked later hard links when `-u --remove-destination` kept a destination that was a hard link to the source. Fixing it took several rounds of hard-link bookkeeping in the early `--remove-destination` branches and grew A to +563/−35. A was rewritten to the core fix (+264/−27), leaving those branches as upstream, reviewed again in three rounds and force-pushed to #14893.
+- 2026-10-03: The owner marked B ready for review. Sylvestre asked for a shorter test name and for a test of `-L` when the resolved source path cannot be used, where B now takes the target's attributes instead of the link's. B gained `test_cp_preserve_timestamps_dereference_deleted`, which copies `/dev/stdin` for a deleted open file and fails on the pre-B code; it is ignored under `wasi_runner`, where `/dev` is not visible. CodSpeed flagged two `factor` benchmarks on B; they are unrelated, and other PRs show the same regression.
+- 2026-10-03: A0 merged upstream as `e0e9b79b7` and `bd4f7348b`, identical to A's copies. A's own commit rebased cleanly onto `main` (`9076db2cb`), passed clippy and all 399 `test_cp` tests on Linux, and was force-pushed to #14893.

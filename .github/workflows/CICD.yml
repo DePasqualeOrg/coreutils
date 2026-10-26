@@ -975,23 +975,8 @@ jobs:
         lima ls -laZ /etc/selinux
     - name: Build and Test with SELinux
       run: |
-        lima bash -c '
-          set -euo pipefail
-          cd work
-          # Only the extent-inspection test needs disk storage; sparse tests use /tmp.
-          test_tmp=$(mktemp -d /var/tmp/coreutils-reflink-test.XXXXXX)
-          cleanup() { rm -rf -- "$test_tmp"; }
-          trap cleanup EXIT
-          printf "%s\n" "extent probe" > "$test_tmp/fiemap-probe"
-          filefrag -s -v "$test_tmp/fiemap-probe"
-          rm -- "$test_tmp/fiemap-probe"
-          result=0
-          cargo test --features "feat_selinux" --no-default-features \
-            -- --exact --skip test_cp::test_cp_reflink_never || result=$?
-          TMPDIR="$test_tmp" cargo test --features "feat_selinux" --no-default-features \
-            --test tests -- test_cp::test_cp_reflink_never --exact || result=$?
-          exit "$result"
-        '
+        lima ls
+        lima bash -c "cd work && cargo test --features 'feat_selinux' --no-default-features"
     - name: Lint with SELinux
       run: lima bash -c "cd work && cargo clippy --all-targets --features 'feat_selinux' --no-default-features -- -D warnings"
 

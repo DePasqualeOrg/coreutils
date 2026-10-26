@@ -18,7 +18,7 @@ Maintainers prefer small PRs, so each PR fixes one defect and carries its own te
 | C | `cp: preserve directory access times` | B merged | Planned |
 | D | `cp: preserve symlink timestamps on WASI` | B merged | Planned |
 
-#13913 was closed on September 27, 2026, pointing to A0, A and B.
+PR [#13913](https://github.com/uutils/coreutils/pull/13913) was closed on September 27, 2026, pointing to A0, A and B.
 
 ### A0: recursive copy stops at the first skipped file
 

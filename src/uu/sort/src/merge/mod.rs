@@ -435,12 +435,7 @@ impl<R: Read + Send> MergeInput for PlainMergeInput<R> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    #[cfg(unix)]
-    use std::fs;
     use std::io::{self, BufWriter, Write};
-    #[cfg(unix)]
-    use std::os::unix::fs::PermissionsExt;
 
     use super::flush_writer;
 
@@ -505,6 +500,11 @@ mod tests {
     #[test]
     #[cfg(all(unix, not(target_os = "redox")))]
     fn output_copy_is_not_read_through_a_replaced_tmp_dir() {
+        use std::fs;
+
+        use super::{open_input, replace_output_file_in_input_files};
+        use crate::tmp_dir::TmpDirWrapper;
+
         let dir = tempfile::tempdir().unwrap();
         let other = tempfile::tempdir().unwrap();
         fs::write(other.path().join("0"), b"other\n").unwrap();
@@ -533,6 +533,11 @@ mod tests {
     #[test]
     #[cfg(all(unix, not(target_os = "redox")))]
     fn finished_input_is_not_removed_through_a_replaced_tmp_dir() {
+        use std::fs;
+
+        use super::{ClosedTmpFile, MergeInput, WriteablePlainTmpFile, WriteableTmpFile};
+        use crate::tmp_dir::TmpDirWrapper;
+
         let dir = tempfile::tempdir().unwrap();
         let other = tempfile::tempdir().unwrap();
         fs::write(other.path().join("0"), b"other\n").unwrap();

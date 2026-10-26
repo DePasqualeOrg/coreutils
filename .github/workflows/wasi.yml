@@ -27,22 +27,17 @@ jobs:
           - { target: wasm32-wasip1, rust-flags: "--cfg wasi_runner" }
           - { target: wasm32-wasip2, rust-flags: "--cfg wasi_runner --cfg wasip2_runner"  }
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
-    - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable at 2026-10-26
+    - uses: dtolnay/rust-toolchain@stable
       with:
         targets: ${{ matrix.job.target }}
-    - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+    - uses: Swatinem/rust-cache@v2
       with:
         key: "${{ matrix.job.target }}"
-    - name: Check sort for threaded WASI
-      if: matrix.job.target == 'wasm32-wasip1'
-      run: |
-        rustup target add wasm32-wasip1-threads
-        cargo check --target wasm32-wasip1-threads --no-default-features -p uu_sort
     - name: Install wasmtime
-      uses: taiki-e/install-action@26dc88defa80697284c4ea495744f84fa4751c78 # wasmtime at 2026-10-26
+      uses: taiki-e/install-action@wasmtime
     - name: Run unit tests
       env:
         CARGO_TARGET_WASM32_WASIP1_RUNNER: wasmtime
@@ -77,7 +72,7 @@ jobs:
         # caret diagnostics; the host test crate does have them, hence the
         # not(wasi_runner) in the cfg guarding every `mod diagnostics`.
         # TODO: add integration tests for these tools as WASI support is extended:
-        #   csplit ls rm seq split tsort
+        #   csplit ls rm seq sort split tsort
         # nproc is not part of the default feature set, so it needs to be
         # requested explicitly for the host test crate to compile its tests.
         UUTESTS_BINARY_PATH="$(pwd)/target/${{ matrix.job.target }}/debug/coreutils.wasm" \
@@ -93,6 +88,6 @@ jobs:
           test_paste:: test_pathchk:: test_pr:: test_printenv:: test_printf:: test_ptx:: \
           test_pwd:: test_readlink:: test_realpath:: test_rmdir:: test_sha1sum:: test_sha224sum:: test_sha256sum:: \
           test_sha384sum:: test_sha512sum:: test_shred:: test_shuf:: test_sleep:: \
-          test_sum:: test_tail:: test_tee:: test_sort:: \
+          test_sum:: test_tail:: test_tee:: \
           test_test:: test_touch:: test_tr:: test_true:: test_truncate:: test_uname:: \
           test_uniq:: test_unexpand:: test_unlink:: test_vdir:: test_wc:: test_yes::

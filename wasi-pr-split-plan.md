@@ -6,7 +6,7 @@
 
 The downstream `stacked-prs` branch is the downstream integration reference for `swift-wasm-runtime`. It is not intended to be submitted as one PR.
 
-Current base: `upstream/main` at `b35debfa74` on October 26, 2026. The refreshed aggregate is local pending authorization to replace its published branch. Public contribution branches are preserved.
+Current base: `upstream/main` at `b35debfa74` on October 26, 2026. The refreshed aggregate was published on October 27. Public contribution branches are preserved.
 
 Current layers:
 
@@ -39,7 +39,7 @@ Porting notes from the October 26 refresh:
 - [x] `tail` coverage merged: PR #13805
 - [x] Final `sort --merge` flush fix merged: PR #13910
 - [x] Complete synchronous `sort` reference open as draft: PR #13806
-- [x] Old complete `cp` metadata reference closed: PR #13913; split #14891 merged, #14892 open and ready, #14893 draft.
+- [x] Old complete `cp` metadata reference closed: PR #13913; split #14891 merged, #14892 open and ready, #14893 draft. Both conflicted with `main` on November 5 and were rebased locally; see `CP_UPDATE_TIMESTAMPS_PR_PLAN.md`.
 - [x] Aggregate PR #11712 retired after the replacement branches were pushed
 
 Detailed plans:

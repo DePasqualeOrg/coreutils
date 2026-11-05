@@ -6,7 +6,7 @@
 
 PR [#13910](https://github.com/uutils/coreutils/pull/13910) contains the independent final `sort --merge` flush-error fix. Its current tip is `82e437edd`.
 
-Draft PR [#13806](https://github.com/uutils/coreutils/pull/13806) retains the complete synchronous WASI implementation as a consolidated reference. It was rebuilt directly on #13910 and pushed at `27896f108`.
+Draft PR [#13806](https://github.com/uutils/coreutils/pull/13806) retains the complete synchronous WASI implementation as a consolidated reference. Its published head is `5db1cae62` (September 27, 2026), which now conflicts with `main`; the `stacked-prs` aggregate carries a port to the October 26 base. Eduardo Rodrigues's (`eduardomourar`) August review is addressed in it: the `extend_from_slice` comment is kept, and threaded selection uses the exact target triple for the reason below rather than the suggested `atomics` check.
 
 The earlier six-PR decomposition remains a useful set of possible review boundaries, but it is not an active submission sequence:
 

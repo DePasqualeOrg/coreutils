@@ -13,8 +13,8 @@ Maintainers prefer small PRs, so each PR fixes one defect and carries its own te
 | PR | Title | Depends on | Status |
 |---|---|---|---|
 | A0 | [#14891](https://github.com/uutils/coreutils/pull/14891) `cp: keep copying a directory after skipping a file` | – | Merged (2026-10-03) |
-| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Draft; rebased and reviewed locally, awaiting the owner's approval to push |
-| B | [#14892](https://github.com/uutils/coreutils/pull/14892) `cp: preserve the source's access time` | – | Ready for review; conflicts with `main`, rebased locally, awaiting the owner's approval to push |
+| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Ready for review; rebased onto `main` on November 5 |
+| B | [#14892](https://github.com/uutils/coreutils/pull/14892) `cp: preserve the source's access time` | – | Ready for review; rebased onto `main` on November 5 |
 | C | `cp: preserve directory access times` | B merged | Planned |
 | D | `cp: preserve symlink timestamps on WASI` | B merged | Planned |
 
@@ -82,7 +82,6 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - [x] B marked ready for review, and the maintainer's review addressed (2026-10-03).
 - [x] A rebased onto `main` again after upstream's relative-symlink check, reviewed in four rounds and tested natively and under wasmtime (2026-11-05).
 - [x] B rebased onto `main` and tested natively and under wasmtime (2026-11-05).
-- [ ] Push A and B, update A's description and mark A ready, after the owner approves.
 - [ ] C and D implemented after B merges.
 
 ## Decision record

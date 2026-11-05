@@ -13,8 +13,8 @@ Maintainers prefer small PRs, so each PR fixes one defect and carries its own te
 | PR | Title | Depends on | Status |
 |---|---|---|---|
 | A0 | [#14891](https://github.com/uutils/coreutils/pull/14891) `cp: keep copying a directory after skipping a file` | – | Merged (2026-10-03) |
-| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Draft, rebased on `main` |
-| B | [#14892](https://github.com/uutils/coreutils/pull/14892) `cp: preserve the source's access time` | – | Ready for review |
+| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Draft; rebased and reviewed locally, awaiting the owner's approval to push |
+| B | [#14892](https://github.com/uutils/coreutils/pull/14892) `cp: preserve the source's access time` | – | Ready for review; conflicts with `main`, rebased locally, awaiting the owner's approval to push |
 | C | `cp: preserve directory access times` | B merged | Planned |
 | D | `cp: preserve symlink timestamps on WASI` | B merged | Planned |
 
@@ -34,7 +34,7 @@ PR [#13913](https://github.com/uutils/coreutils/pull/13913) was closed on Septem
 - `--update=older -i --remove-destination` deletes the destination without prompting.
 - `-l -u` and `-s -u` fail with "File exists" instead of skipping a newer destination.
 
-The fix decides the `-u` skip in `handle_existing_dest`, and in the `--attributes-only` path that bypasses it, before any backup, removal or prompt, and returns from `copy_file` without touching a skipped destination. As upstream did, a skipped destination is recorded in `copied_files` so later hard links are linked to it, and a source that is a hard link to a source already copied elsewhere is linked to that copy whatever its age. A skipped destination no longer counts as just created, and a newer dangling destination symlink is kept under `-P -u`, as in GNU. The first version also handled the early `--remove-destination` branches and the hard-link cases they raise; that more than doubled the PR for rare cases, so A was reduced to this core and the description names what it leaves out.
+The fix decides the `-u` skip in `handle_existing_dest`, and in the `--attributes-only` path that bypasses it, before any backup, removal or prompt, and returns from `copy_file` without touching a skipped destination. As upstream did, a skipped destination is recorded in `copied_files` so later hard links are linked to it, and a source that is a hard link to a source already copied elsewhere is linked to that copy whatever its age. A skipped destination no longer counts as just created, and a newer dangling destination symlink is kept under `-P -u`, as in GNU. The first version also handled the early `--remove-destination` branches and the hard-link cases they raise; that more than doubled the PR for rare cases, so A was reduced to this core and the description names what it leaves out. Upstream's relative-symlink check for `cp -s` still runs first, but when it fails a newer destination is skipped silently before the error is reported, as GNU 9.7 does.
 
 ### B: `cp -p` loses the source's access time
 
@@ -61,7 +61,9 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - The early `--remove-destination` branches for a destination that is a symlink or hard link to the source remove it before `-u`, `--update=none` or `none-fail` is considered. GNU 9.7 keeps a newer one under `-u`. Handling `-u` there also needs the hard-link bookkeeping that the first version of A had: a kept destination that is a hard link to the source must be recorded, a later source already copied elsewhere must be linked whatever its age, and a kept symlink must not be recorded when the sources are regular files.
 - `-f --preserve=links` and `--attributes-only --preserve=links` without `--remove-destination` do not remove an existing destination before linking a later hard link to it, so the link fails with "File exists". This includes a later name whose source was skipped by `-u`, as upstream does. GNU 9.7 replaces the destination in both modes.
 - With `-u --preserve=links`, when the kept destination is a symlink and the sources are regular files, GNU 9.7 links later names to the symlink's target, and fails when it dangles. uutils links them to the symlink itself, so they become symlinks, as upstream does.
-- `-n -u --preserve=links` links a later hard link of the source to a destination kept by `-u`, as upstream does. Not checked against GNU.
+- `-n -u --preserve=links`, where a later name is a hard link to a source that `-u` skipped and its destination exists, fails with "File exists", as upstream does. GNU 9.7 leaves the destination alone and exits 0. Requiring `links_to_copied_file` to exclude `NoClobber` in `handle_existing_dest` is a likely fix.
+- `-i --update=older --preserve=links` links a later hard link of a copied or skipped source over an existing destination without prompting, as upstream does. GNU 9.7 prompts for it when that destination is older than the source, and keeps it on "n".
+- `cp -s -n` and `cp -s --update=none` with a relative source and an existing destination outside the current directory fail with "can make relative symbolic links only in current directory". GNU 9.7 keeps the destination and exits 0. A covers only `--update=older`.
 - A recursive `-a -n` does not record a skipped file in `copied_files`, so a later hard link to it is copied as an independent file. Not checked against GNU.
 
 ## Dropped from #13913
@@ -78,6 +80,9 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - [x] #13913 closed with links to A0, A and B.
 - [x] A0 merged; A rebased onto `main` (2026-10-03).
 - [x] B marked ready for review, and the maintainer's review addressed (2026-10-03).
+- [x] A rebased onto `main` again after upstream's relative-symlink check, reviewed in four rounds and tested natively and under wasmtime (2026-11-05).
+- [x] B rebased onto `main` and tested natively and under wasmtime (2026-11-05).
+- [ ] Push A and B, update A's description and mark A ready, after the owner approves.
 - [ ] C and D implemented after B merges.
 
 ## Decision record
@@ -87,3 +92,4 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - 2026-09-27: A Codex review found that A no longer linked later hard links when `-u --remove-destination` kept a destination that was a hard link to the source. Fixing it took several rounds of hard-link bookkeeping in the early `--remove-destination` branches and grew A to +563/−35. A was rewritten to the core fix (+264/−27), leaving those branches as upstream, reviewed again in three rounds and force-pushed to #14893.
 - 2026-10-03: The owner marked B ready for review. Sylvestre asked for a shorter test name and for a test of `-L` when the resolved source path cannot be used, where B now takes the target's attributes instead of the link's. B gained `test_cp_preserve_timestamps_dereference_deleted`, which copies `/dev/stdin` for a deleted open file and fails on the pre-B code; it is ignored under `wasi_runner`, where `/dev` is not visible. CodSpeed flagged two `factor` benchmarks on B; they are unrelated, and other PRs show the same regression.
 - 2026-10-03: A0 merged upstream as `e0e9b79b7` and `bd4f7348b`, identical to A's copies. A's own commit rebased cleanly onto `main` (`9076db2cb`), passed clippy and all 399 `test_cp` tests on Linux, and was force-pushed to #14893.
+- 2026-11-05: Sylvestre asked for A to be rebased. Upstream had added `verify_relative_symlink_in_cwd` beside A's `skip_unless_newer`; the conflict was textual, but the new check made `cp -s -u` with a relative source fail outside the current directory where GNU 9.7 skips a newer destination, so A now skips first in that case. B conflicted only in the spell-checker list, and its new test adopts upstream's `uutests::wasi_ignore(HostPathsNotVisible)` macro.

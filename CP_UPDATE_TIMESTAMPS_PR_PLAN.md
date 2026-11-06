@@ -13,7 +13,7 @@ Maintainers prefer small PRs, so each PR fixes one defect and carries its own te
 | PR | Title | Depends on | Status |
 |---|---|---|---|
 | A0 | [#14891](https://github.com/uutils/coreutils/pull/14891) `cp: keep copying a directory after skipping a file` | – | Merged (2026-10-03) |
-| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Ready for review; rebased onto `main` on November 5 |
+| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Ready for review; reworked for the maintainer's review and rebased on November 6 |
 | B | [#14892](https://github.com/uutils/coreutils/pull/14892) `cp: preserve the source's access time` | – | Ready for review; rebased onto `main` on November 5 |
 | C | `cp: preserve directory access times` | B merged | Planned |
 | D | `cp: preserve symlink timestamps on WASI` | B merged | Planned |
@@ -81,6 +81,7 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - [x] A0 merged; A rebased onto `main` (2026-10-03).
 - [x] B marked ready for review, and the maintainer's review addressed (2026-10-03).
 - [x] A rebased onto `main` again after upstream's relative-symlink check, reviewed in four rounds and tested natively and under wasmtime (2026-11-05).
+- [x] A reworked for Sylvestre's November 6 review: the `--update=older` skip is decided in one place at the top of `copy_file` (`update_keeps_dest`), which leaves a same-file destination and a dangling symlink the copy would write through to the existing errors, as GNU 9.7 does. Rebased, reviewed and tested natively and under wasmtime; no reply posted, per the owner.
 - [x] B rebased onto `main` and tested natively and under wasmtime (2026-11-05).
 - [ ] C and D implemented after B merges.
 

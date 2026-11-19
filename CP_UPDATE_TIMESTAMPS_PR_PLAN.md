@@ -13,7 +13,7 @@ Maintainers prefer small PRs, so each PR fixes one defect and carries its own te
 | PR | Title | Depends on | Status |
 |---|---|---|---|
 | A0 | [#14891](https://github.com/uutils/coreutils/pull/14891) `cp: keep copying a directory after skipping a file` | – | Merged (2026-10-03) |
-| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Ready for review; reworked for the maintainer's review and rebased on November 6 |
+| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Ready for review; reworked for the maintainer's November 19 comments and rebased on November 19 |
 | B | [#14892](https://github.com/uutils/coreutils/pull/14892) `cp: preserve the source's access time` | – | Ready for review; rebased onto `main` on November 5 |
 | C | `cp: preserve directory access times` | B merged | Planned |
 | D | `cp: preserve symlink timestamps on WASI` | B merged | Planned |
@@ -65,6 +65,10 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - `-i --update=older --preserve=links` links a later hard link of a copied or skipped source over an existing destination without prompting, as upstream does. GNU 9.7 prompts for it when that destination is older than the source, and keeps it on "n".
 - `cp -s -n` and `cp -s --update=none` with a relative source and an existing destination outside the current directory fail with "can make relative symbolic links only in current directory". GNU 9.7 keeps the destination and exits 0. A covers only `--update=older`.
 - A recursive `-a -n` does not record a skipped file in `copied_files`, so a later hard link to it is copied as an independent file. Not checked against GNU.
+- `-u --backup` where `dest` is the same file under another name (a hard link to the source, or a symlink to it) backs up `dest` and copies; `cp -s -u --backup a b`, where `b` is a newer symlink to `a`, does the same. GNU 9.7 compares ages and skips. `update_keeps_dest` exempts every `paths_refer_to_same_file` case from the age check; GNU exempts only the cases it reports as the same file and the same name under `-f --backup`.
+- `cp -s -u a b`, where `b` is a newer symlink to `a`, fails with "File exists"; GNU 9.7 skips it.
+- `cp -l -u s dl`, where `dl` is a newer dangling symlink, fails with "not writing through dangling symlink"; GNU 9.7 skips it, since a hard link does not write through `dl`. `update_keeps_dest` exempts only `-s` from the dangling-symlink case.
+- Under the WASI runner, upstream's `test_cp_source_with_trailing_slash_on_file::case_2_recursive` fails on `main` (`07b76df46`): `cp -r f/ dest` reports `'f/' -> 'dest': Not a directory` instead of `cannot stat 'f/': Not a directory`. The plain case passes, so the recursive path checks the trailing slash differently on WASI.
 
 ## Dropped from #13913
 
@@ -82,6 +86,7 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - [x] B marked ready for review, and the maintainer's review addressed (2026-10-03).
 - [x] A rebased onto `main` again after upstream's relative-symlink check, reviewed in four rounds and tested natively and under wasmtime (2026-11-05).
 - [x] A reworked for Sylvestre's November 6 review: the `--update=older` skip is decided in one place at the top of `copy_file` (`update_keeps_dest`), which leaves a same-file destination and a dangling symlink the copy would write through to the existing errors, as GNU 9.7 does. Rebased, reviewed and tested natively and under wasmtime; no reply posted, per the owner.
+- [x] A reworked for Sylvestre's November 19 comments: `copy_file` computes `writes_through_dangling_symlink` once for `update_keeps_dest` and the dangling-symlink error, and `source_info` once for the hard-link lookup and the record of a skipped destination, which is now made only when hard links are preserved. Rebased, reviewed in three rounds, tested natively and under wasmtime, and force-pushed; no reply posted.
 - [x] B rebased onto `main` and tested natively and under wasmtime (2026-11-05).
 - [ ] C and D implemented after B merges.
 

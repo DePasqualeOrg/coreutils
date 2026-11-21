@@ -13,7 +13,7 @@ Maintainers prefer small PRs, so each PR fixes one defect and carries its own te
 | PR | Title | Depends on | Status |
 |---|---|---|---|
 | A0 | [#14891](https://github.com/uutils/coreutils/pull/14891) `cp: keep copying a directory after skipping a file` | – | Merged (2026-10-03) |
-| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Ready for review; reworked for the maintainer's November 19 comments and rebased on November 19 |
+| A | [#14893](https://github.com/uutils/coreutils/pull/14893) `cp: decide an --update=older skip before touching the destination` | A0 (merged) | Ready for review; reworked for the maintainer's November 21 comments |
 | B | [#14892](https://github.com/uutils/coreutils/pull/14892) `cp: preserve the source's access time` | – | Ready for review; rebased onto `main` on November 5 |
 | C | `cp: preserve directory access times` | B merged | Planned |
 | D | `cp: preserve symlink timestamps on WASI` | B merged | Planned |
@@ -87,6 +87,7 @@ These are pre-existing and outside A and B. Each needs its own GNU check and PR.
 - [x] A rebased onto `main` again after upstream's relative-symlink check, reviewed in four rounds and tested natively and under wasmtime (2026-11-05).
 - [x] A reworked for Sylvestre's November 6 review: the `--update=older` skip is decided in one place at the top of `copy_file` (`update_keeps_dest`), which leaves a same-file destination and a dangling symlink the copy would write through to the existing errors, as GNU 9.7 does. Rebased, reviewed and tested natively and under wasmtime; no reply posted, per the owner.
 - [x] A reworked for Sylvestre's November 19 comments: `copy_file` computes `writes_through_dangling_symlink` once for `update_keeps_dest` and the dangling-symlink error, and `source_info` once for the hard-link lookup and the record of a skipped destination, which is now made only when hard links are preserved. Rebased, reviewed in three rounds, tested natively and under wasmtime, and force-pushed; no reply posted.
+- [x] A reworked for Sylvestre's November 21 comments in a second commit, `0004fbdd5`: `copy_file` stats the source once at its top and passes the metadata to `update_keeps_dest`, and a `remove_destination` variable replaces four `matches!`. An unstatable source now fails before `--update=none`, `--remove-destination`, `-i` or `-s` act on `dest`, as GNU does; `test_cp_missing_source_fails_before_touching_destination` covers it and fails on the previous code. Tested natively (macOS) and under wasmtime, where only the known trailing-slash failure remains; pushed without a reply.
 - [x] B rebased onto `main` and tested natively and under wasmtime (2026-11-05).
 - [ ] C and D implemented after B merges.
 
